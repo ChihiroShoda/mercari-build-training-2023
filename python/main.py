@@ -30,7 +30,7 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
     # imageのhash化
     file_name = image.filename
     hash_file_name = hashlib.sha256(file_name.encode('utf-8')).hexdigest() + ".jpg"
-    upload_dir = open(os.path.join("images/", hash_file_name),'wb+')
+    upload_dir = open(os.path.join(images / hash_file_name),'wb+')
     shutil.copyfileobj(image.file, upload_dir)
 
     # jsonファイルの読み込み / 書き込み
@@ -49,6 +49,12 @@ def get_item():
         items = json.load(f)
     return items
 
+@app.get("/items/{item_id}")
+def get_item_by_id(item_id: int):
+    with open('items.json') as f:
+        items = json.load(f)
+    return items["items"][item_id - 1]
+
 @app.get("/image/{image_filename}")
 async def get_image(image_filename):
     # Create image path
@@ -58,7 +64,8 @@ async def get_image(image_filename):
         raise HTTPException(status_code=400, detail="Image path does not end with .jpg")
 
     if not image.exists():
-        logger.debug(f"Image not found: {image}")
+        #logger.debug(f"Image not found: {image}") debugだと表示されない
+        logger.error(f"Image not found: {image}")
         image = images / "default.jpg"
 
     return FileResponse(image)
