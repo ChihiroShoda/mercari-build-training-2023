@@ -2,7 +2,9 @@ import os
 import logging
 import pathlib
 import json
-from fastapi import FastAPI, Form, HTTPException
+import hashlib
+import shutil
+from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,18 +26,28 @@ def root():
     return {"message": "Hello, world!"}
 
 @app.post("/items")
-def add_item(name: str = Form(...), category: str = Form(...)):
-    logger.info(f"Receive item: {name} (category: {category})")
+def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile = Form(...)):
+    # imageのhash化
+    file_name = image.filename
+    hash_file_name = hashlib.sha256(file_name.encode('utf-8')).hexdigest() + ".jpg"
+    upload_dir = open(os.path.join("images/", hash_file_name),'wb+')
+    shutil.copyfileobj(image.file, upload_dir)
 
     # jsonファイルの読み込み / 書き込み
     with open('items.json') as f:
         items = json.load(f)
-    items["items"].append({"name": name, "category": category})
-
+    items["items"].append({"name": name, "category": category, "image_filename": hash_file_name})
     with open('items.json', 'wt') as f:
         json.dump(items, f)
 
-    return {"message": f"item received: {name} (category: {category})"}
+    logger.info(f"Receive item: {name} (category: {category}, image: {file_name})")
+    return {"message": f"item received: {name}"}
+
+@app.get("/items")
+def get_item():
+    with open('items.json') as f:
+        items = json.load(f)
+    return items
 
 @app.get("/image/{image_filename}")
 async def get_image(image_filename):
