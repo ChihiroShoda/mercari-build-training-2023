@@ -28,8 +28,11 @@ def root():
 @app.post("/items")
 def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile = Form(...)):
     # imageのhash化
-    file_name = image.filename
-    hash_file_name = hashlib.sha256(file_name.encode('utf-8')).hexdigest() + ".jpg"
+    image_path = images / image.filename
+    with open(image_path, "rb") as f:
+        # ハッシュ値を取得
+        image_hash = hashlib.sha256(f.read()).hexdigest()
+    hash_file_name = str(image_hash) + ".jpg"
     upload_dir = open(os.path.join(images / hash_file_name),'wb+')
     shutil.copyfileobj(image.file, upload_dir)
 
@@ -40,7 +43,7 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
     with open('items.json', 'wt') as f:
         json.dump(items, f)
 
-    logger.info(f"Receive item: {name} (category: {category}, image: {file_name})")
+    logger.info(f"Receive item: {name} (category: {category}, image: {hash_file_name})")
     return {"message": f"item received: {name}"}
 
 @app.get("/items")
@@ -64,8 +67,7 @@ async def get_image(image_filename):
         raise HTTPException(status_code=400, detail="Image path does not end with .jpg")
 
     if not image.exists():
-        #logger.debug(f"Image not found: {image}") debugだと表示されない
-        logger.error(f"Image not found: {image}")
+        logger.debug(f"Image not found: {image}") #__init__.pyのロギングレベルを15にすると表示される
         image = images / "default.jpg"
 
     return FileResponse(image)
