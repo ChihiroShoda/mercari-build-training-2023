@@ -1,1 +1,3 @@
-CREATE TABLE items(id integer primary key, name text, category text, image_name text)
+CREATE TABLE items(id integer primary key autoincrement, name text, category_id integer, image_filename text)
+CREATE TABLE category(id integer primary key autoincrement, category text)
+CREATE UNIQUE INDEX category_check on category(category)

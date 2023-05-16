@@ -41,8 +41,16 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
     # sqliteで保存
     con = sqlite3.connect(sqlite_path)
     cur = con.cursor()
-    sql = """INSERT INTO items (name, category, image_name) values(?, ?, ?)"""
-    data = (name, category, hash_file_name)
+
+    # 新規カテゴリであればcategory_tableに追加
+    cur.execute("INSERT INTO category (category) values(?) on conflict (category) do nothing", (category, ))
+
+    # カテゴリIDを取得してitems_tableに追加
+    cur.execute(f"SELECT * FROM category WHERE category = '{category}'")
+    category_id = cur.fetchone()[0]
+
+    sql = """INSERT INTO items (name, category_id, image_filename) values(?, ?, ?)"""
+    data = (name, category_id, hash_file_name)
     cur.execute(sql, data)
     con.commit()
     con.close()
