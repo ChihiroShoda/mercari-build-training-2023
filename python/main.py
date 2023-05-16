@@ -79,3 +79,13 @@ async def get_image(image_filename):
         image = images / "default.jpg"
 
     return FileResponse(image)
+
+@app.get("/search")
+def get_item_by_keyword(keyword):
+    con = sqlite3.connect(sqlite_path)
+    cur = con.cursor()
+    cur.execute(f"SELECT * FROM items WHERE name LIKE '%{keyword}%'")
+    items = cur.fetchall()
+    con.close()
+
+    return items
