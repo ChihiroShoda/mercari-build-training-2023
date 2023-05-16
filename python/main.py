@@ -45,10 +45,11 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
     # 新規カテゴリであればcategory_tableに追加
     cur.execute("INSERT INTO category (category) values(?) on conflict (category) do nothing", (category, ))
 
-    # カテゴリIDを取得してitems_tableに追加
+    # カテゴリIDを取得
     cur.execute(f"SELECT * FROM category WHERE category = '{category}'")
     category_id = cur.fetchone()[0]
 
+    # items_tableに格納
     sql = """INSERT INTO items (name, category_id, image_filename) values(?, ?, ?)"""
     data = (name, category_id, hash_file_name)
     cur.execute(sql, data)
@@ -62,7 +63,11 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
 def get_item():
     con = sqlite3.connect(sqlite_path)
     cur = con.cursor()
-    cur.execute('SELECT * FROM items id')
+    sql = """
+        SELECT items.id, items.name, category.category, items.image_filename FROM items
+        INNER JOIN category ON items.category_id = category.id
+        """
+    cur.execute(sql)
     items = cur.fetchall()
     con.close()
 
