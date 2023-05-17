@@ -13,7 +13,7 @@ app = FastAPI()
 logger = logging.getLogger("uvicorn")
 logger.level = logging.INFO
 images = pathlib.Path(__file__).parent.resolve() / "images"
-sqlite_path = "/Users/CHIHIRO/Desktop/mercari/mercari-build-training-2023/db/mercari.sqlite3"
+sqlite_path = pathlib.Path(__file__).parent.parent.resolve() / "db/mercari.sqlite3"
 origins = [ os.environ.get('FRONT_URL', 'http://localhost:3000') ]
 app.add_middleware(
     CORSMiddleware,
@@ -46,7 +46,7 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
     cur.execute("INSERT INTO category (category) values(?) on conflict (category) do nothing", (category, ))
 
     # カテゴリIDを取得
-    cur.execute(f"SELECT * FROM category WHERE category = '{category}'")
+    cur.execute("SELECT * FROM category WHERE category = ?", (category, ))
     category_id = cur.fetchone()[0]
 
     # items_tableに格納
@@ -97,7 +97,8 @@ async def get_image(image_filename):
 def get_item_by_keyword(keyword):
     con = sqlite3.connect(sqlite_path)
     cur = con.cursor()
-    cur.execute(f"SELECT * FROM items WHERE name LIKE '%{keyword}%'")
+    cur.execute("SELECT * FROM items WHERE name LIKE ?", ("%" + keyword + "%", ))
+    #cur.execute("SELECT * FROM items WHERE name LIKE ?", (keyword, ))
     items = cur.fetchall()
     con.close()
 
